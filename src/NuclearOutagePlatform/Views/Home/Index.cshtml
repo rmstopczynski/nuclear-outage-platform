@@ -1,0 +1,70 @@
+﻿@{
+    ViewData["Title"] = "Home - The Nuclear Dashboard";
+    Layout = "_Layout";
+}
+
+<section class="intro">
+    <h2>Welcome to The Nuclear Dashboard</h2>
+    <p>Your premier destination for nuclear outage data and visualization.</p>
+</section>
+
+<section class="features">
+    <h3>Why Choose The Nuclear Dashboard?</h3>
+    <ul>
+        <li>Comprehensive nuclear outage database with real-time insights</li>
+        <li>Interactive data visualization tools</li>
+        <li>User-friendly CRUD operations for data management</li>
+        <li>Responsive design works on all devices</li>
+    </ul>
+</section>
+
+<section class="quick-links">
+    <h3>Get Started</h3>
+    <div class="link-grid">
+        <a asp-controller="Home" asp-action="About" class="btn">
+            <i class="fas fa-info-circle"></i> About This Project
+        </a>
+        <a asp-controller="Home" asp-action="DataVisualization" class="btn">
+            <i class="fas fa-chart-bar"></i> View Charts
+        </a>
+        <a asp-controller="Home" asp-action="Read" class="btn">
+            <i class="fas fa-database"></i> View Outages
+        </a>
+
+    </div>
+</section>
+
+@section Styles {
+    <style>
+        .quick-links {
+            background-color: var(--usf-white);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        .link-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--usf-green);
+            color: var(--usf-green);
+        }
+
+        .btn-outline:hover {
+            background: var(--usf-green);
+            color: white;
+        }
+    
+        .fas {
+            margin-right: 8px;
+        }
+    </style>
+}
+

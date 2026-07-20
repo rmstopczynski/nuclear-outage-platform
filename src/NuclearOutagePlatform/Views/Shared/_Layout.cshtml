@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - The Nuclear Dashboard</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+    <header class="header">
+        <h1>The Nuclear Dashboard</h1>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a asp-controller="Home" asp-action="Index">Home</a></li>
+            <li><a asp-controller="Home" asp-action="About">About Us</a></li>
+            <li><a asp-controller="Home" asp-action="DataVisualization">Data Visualization</a></li>
+            <li><a asp-controller="Home" asp-action="Read">Outages</a></li>
+     
+        </ul>
+    </nav>
+
+    <main class="body-content">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <p>&copy; @DateTime.Now.Year - The Nuclear Dashboard</p>
+        <p>Contact: 
+            <a href="mailto:contact@thenucleardashboard.com">contact@thenucleardashboard.com</a>
+        </p>
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/site.js" asp-append-version="true"></script>
+</body>
+</html>

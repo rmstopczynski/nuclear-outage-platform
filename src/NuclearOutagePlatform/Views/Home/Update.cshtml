@@ -1,0 +1,49 @@
+﻿@model MVC_EF_Start_8.Models.OutageRecord
+
+@{
+    ViewData["Title"] = "Update";
+    Layout = "_Layout";
+}
+
+<h2>Update Outage Details</h2>
+
+<form asp-action="Update" asp-route-id="@Model.Id" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div>
+        <label asp-for="Period">Period:</label>
+        <input asp-for="Period" type="date" required />
+    </div>
+
+    <div>
+        <label asp-for="Facility">Facility:</label>
+        <input asp-for="Facility" required />
+    </div>
+
+    <div>
+        <label asp-for="FacilityName">Facility Name:</label>
+        <input asp-for="FacilityName" required />
+    </div>
+
+    <div>
+        <label asp-for="Generator">Generator:</label>
+        <input asp-for="Generator" />
+    </div>
+
+    <div>
+        <label asp-for="Capacity">Capacity:</label>
+        <input asp-for="Capacity" />
+    </div>
+
+    <div>
+        <label asp-for="Outage">Outage:</label>
+        <input asp-for="Outage" />
+    </div>
+
+    <div>
+        <label asp-for="PercentOutage">Percent Outage:</label>
+        <input asp-for="PercentOutage" />
+    </div>
+
+    <button type="submit">Save Changes</button>
+</form>

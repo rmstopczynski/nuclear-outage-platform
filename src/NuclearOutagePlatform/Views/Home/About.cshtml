@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "About";
+    Layout = "_Layout";
+}
+
+<section class="intro">
+    <h2>About This Project</h2>
+    <p>
+        A platform tracking U.S. nuclear power plant outages, built on live
+        data from the U.S. Energy Information Administration (EIA) API.
+    </p>
+</section>
+
+<section class="model-section">
+    <h3>Data Model</h3>
+    <img src="~/images/OutagesERD.png" alt="Data Model" class="model-image" />
+</section>
+
+<section class="github-section">
+    <h3>Source</h3>
+    <a href="https://github.com/rmstopczynski" class="btn" target="_blank">View on GitHub</a>
+</section>
+
+@section Styles {
+    <style>
+        .model-section, .github-section {
+            background-color: var(--usf-white);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .model-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+}

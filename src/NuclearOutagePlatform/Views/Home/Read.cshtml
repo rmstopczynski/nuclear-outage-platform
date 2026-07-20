@@ -1,0 +1,49 @@
+﻿@model List<MVC_EF_Start_8.Models.OutageRecord>
+@{
+    ViewData["Title"] = "Read";
+    Layout = "_Layout";
+}
+
+<h2>Existing Nuclear Outages</h2>
+
+<div style="margin-bottom: 20px;">
+    <a asp-action="Create" class="btn btn-primary">Create New Record</a>
+</div>
+
+<form asp-action="Read" method="get" style="margin-bottom: 20px;">
+    <input type="text" name="searchFacility" placeholder="Enter facility to search..." value="@Context.Request.Query["searchFacility"]" />
+    <button type="submit" class="btn btn-secondary">Search</button>
+</form>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Facility</th>
+            <th>Facility Name</th>
+            <th>Period</th>
+            <th>Generator</th>
+            <th>Capacity</th>
+            <th>Outage</th>
+            <th>% Outage</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Facility</td>
+                <td>@item.FacilityName</td>
+                <td>@item.Period</td>
+                <td>@item.Generator</td>
+                <td>@item.Capacity</td>
+                <td>@item.Outage</td>
+                <td>@item.PercentOutage</td>
+                <td>
+                    <a asp-action="Update" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Update</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

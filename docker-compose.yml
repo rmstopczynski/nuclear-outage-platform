@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: outages_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-outages}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-outages}
+      POSTGRES_DB: ${POSTGRES_DB:-outages_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - outages_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-outages}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ./src/NuclearOutagePlatform
+      dockerfile: Dockerfile
+    container_name: outages_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-outages_db};Username=${POSTGRES_USER:-outages};Password=${POSTGRES_PASSWORD:-outages}"
+      Eia__ApiKey: "${EIA_API_KEY}"
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+    ports:
+      - "8090:8080"
+
+volumes:
+  outages_pg_data:

@@ -1,0 +1,47 @@
+﻿@model MVC_EF_Start_8.Models.OutageRecord
+
+@{
+    ViewData["Title"] = "Create";
+    Layout = "_Layout";
+}
+
+<h2>Add a New Nuclear Outage</h2>
+
+<form asp-action="Create" method="post">
+    <div>
+        <label asp-for="Facility">Facility ID:</label>
+        <input asp-for="Facility" required />
+    </div>
+
+    <div>
+        <label asp-for="Period">Period:</label>
+        <input asp-for="Period" type="date" required />
+    </div>
+
+    <div>
+        <label asp-for="FacilityName">Facility Name:</label>
+        <input asp-for="FacilityName" required />
+    </div>
+
+    <div>
+        <label asp-for="Generator">Generator:</label>
+        <input asp-for="Generator" />
+    </div>
+
+    <div>
+        <label asp-for="Capacity">Capacity:</label>
+        <input asp-for="Capacity" />
+    </div>
+
+    <div>
+        <label asp-for="Outage">Outage:</label>
+        <input asp-for="Outage" />
+    </div>
+
+    <div>
+        <label asp-for="PercentOutage">Percent Outage:</label>
+        <input asp-for="PercentOutage" />
+    </div>
+
+    <button type="submit">Submit</button>
+</form>

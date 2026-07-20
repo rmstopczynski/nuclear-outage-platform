@@ -1,0 +1,16 @@
+﻿@model MVC_EF_Start_8.Models.OutageRecord
+
+@{
+    ViewData["Title"] = "Delete";
+    Layout = "_Layout";
+}
+
+<h2>Confirm Deletion</h2>
+
+<p>Are you sure you want to delete the @Model.Period outage record for facility: <strong>@Model.Facility</strong> (@Model.FacilityName)?</p>
+
+<form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit">Yes, Delete</button>
+    <a asp-action="Read">Cancel</a>
+</form>
