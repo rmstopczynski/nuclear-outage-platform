@@ -63,7 +63,7 @@ concrete about rather than vague.
 The original used Azure SQL via school-provided Azure credits that no
 longer exist. Two options: pay for Azure out of pocket, or self-host a
 free alternative — same reasoning as the substitutions in [the healthcare
-data pipeline project](#). SQL Server itself can run free in Docker
+data engineering platform](https://github.com/rmstopczynski/healthcare-data-engineering-platform). SQL Server itself can run free in Docker
 (Developer edition), which would have meant zero code changes — but real
 hosting platforms with a genuine free tier (see below) don't have the
 RAM headroom to run SQL Server reliably, only Postgres. Rather than
