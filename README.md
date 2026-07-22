@@ -166,8 +166,9 @@ host-side port numbers differ.
 
 ## Roadmap
 
-1. ✅ **Foundation** — real persistence, secrets cleanup, bug fixes, Docker (this step)
-2. Scheduled background ingestion (`BackgroundService`) instead of fetch-on-page-load
+1. ✅ **Foundation** — real persistence, secrets cleanup, bug fixes, Docker
+2. ✅ **Scheduled background ingestion** — `BackgroundService` running for the
+   app's lifetime, replacing fetch-on-page-load (this step)
 3. JWT authentication, user accounts, watchlists
 4. Search/filter improvements on the outage list
 5. GitHub Actions CI (build + test on push; the original had a working
@@ -176,9 +177,34 @@ host-side port numbers differ.
 7. Full Docker Compose for local dev (app + Postgres + any added services)
 8. Live deployment to Render
 
+## Step 2: Scheduled background ingestion
+
+Replaced the "fetch from EIA when the page loads and the table looks
+empty" trigger with a real `BackgroundService` (`EiaIngestionBackgroundService`)
+that runs for the app's entire lifetime: once ~15 seconds after startup,
+then every `Eia:IngestionIntervalHours` (default 6, configurable via
+`.env`). The EIA-fetching logic itself, which used to live tangled up
+inside `HomeController`'s constructor, is now its own
+`EiaIngestionService` — one place that knows how to talk to EIA, shared
+by both the scheduled job and a manual **"Refresh Now"** button added to
+the Outages page for on-demand runs without waiting for the interval.
+
+Confirmed working end to end: the automatic startup run found and
+inserted 384 genuinely new records the first time it ran; every run
+since (both scheduled and manual) correctly found 0 new records, proving
+the idempotent upsert logic (`OutageService.UpsertFromEiaAsync`, from
+Step 1) works as intended rather than re-inserting duplicates.
+
+**Lifetime handling, done correctly from the start:** `BackgroundService`
+instances are Singletons, but `EiaIngestionService` (and the `DbContext`
+underneath it) are Scoped. `EiaIngestionBackgroundService` creates a
+fresh DI scope via `IServiceScopeFactory` on every run rather than
+holding one long-lived instance — avoiding a repeat of the exact
+Singleton-holding-Scoped-dependency bug documented in Step 1's audit.
+
 ## Challenges encountered (and how they were resolved)
 
-- **The "database" wasn't real.** Confirmed by actually reading
+- **The \"database\" wasn't real.** Confirmed by actually reading
   `ApplicationDbContext` rather than assuming EF Core code that compiles
   and runs means it's connected to anything — `DbSet<Company>` and
   `DbSet<Quote>` had nothing to do with nuclear outages, and grep-ing for

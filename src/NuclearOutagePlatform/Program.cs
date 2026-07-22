@@ -32,6 +32,14 @@ builder.Services.AddHttpClient("EIA_API", client =>
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+// EiaIngestionService is Scoped (it depends on OutageService, which is
+// Scoped). EiaIngestionBackgroundService is a Singleton (all
+// BackgroundServices are) and creates its own DI scope per run rather
+// than holding a long-lived EiaIngestionService instance -- see that
+// class for the lifetime-mismatch reasoning.
+builder.Services.AddScoped<EiaIngestionService>();
+builder.Services.AddHostedService<EiaIngestionBackgroundService>();
+
 // --- MVC ---------------------------------------------------------------
 builder.Services.AddControllersWithViews();
 

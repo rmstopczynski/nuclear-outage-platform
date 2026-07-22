@@ -29,6 +29,7 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-outages_db};Username=${POSTGRES_USER:-outages};Password=${POSTGRES_PASSWORD:-outages}"
       Eia__ApiKey: "${EIA_API_KEY}"
+      Eia__IngestionIntervalHours: "${EIA_INGESTION_INTERVAL_HOURS:-6}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
     ports:
       - "8090:8080"

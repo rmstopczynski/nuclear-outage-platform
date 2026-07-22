@@ -6,8 +6,16 @@
 
 <h2>Existing Nuclear Outages</h2>
 
+@if (TempData["RefreshMessage"] != null)
+{
+    <div class="alert alert-info">@TempData["RefreshMessage"]</div>
+}
+
 <div style="margin-bottom: 20px;">
     <a asp-action="Create" class="btn btn-primary">Create New Record</a>
+    <form asp-action="RefreshNow" method="post" style="display: inline;">
+        <button type="submit" class="btn btn-secondary">Refresh Now</button>
+    </form>
 </div>
 
 <form asp-action="Read" method="get" style="margin-bottom: 20px;">

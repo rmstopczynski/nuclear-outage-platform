@@ -1,84 +1,30 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using MVC_EF_Start_8.Models;
 using MVC_EF_Start_8.Services;
-using Newtonsoft.Json;
 
 namespace MVC_EF_Start_8.Controllers
 {
     public class HomeController : Controller
     {
         private readonly OutageService _outageService;
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly ILogger<HomeController> _logger;
-        private readonly string _apiPath;
+        private readonly EiaIngestionService _ingestionService;
 
-        public HomeController(
-            OutageService outageService,
-            IHttpClientFactory httpClientFactory,
-            IConfiguration configuration,
-            ILogger<HomeController> logger)
+        public HomeController(OutageService outageService, EiaIngestionService ingestionService)
         {
             _outageService = outageService;
-            _httpClientFactory = httpClientFactory;
-            _logger = logger;
-
-            // API key now comes from configuration (env var / user-secrets /
-            // Render environment variable), never hardcoded in source. See
-            // README's "Secrets management" section for the full story --
-            // the original had this key as a `const string` directly in
-            // this file, in addition to being leaked in the README.
-            var apiKey = configuration["Eia:ApiKey"]
-                ?? throw new InvalidOperationException(
-                    "EIA API key not configured. Set the Eia:ApiKey configuration value " +
-                    "(EIA__APIKEY environment variable, or dotnet user-secrets in local dev).");
-
-            _apiPath = "nuclear-outages/generator-nuclear-outages/data/" +
-                "?frequency=daily" +
-                "&data[0]=capacity&data[1]=outage&data[2]=percentOutage" +
-                "&sort[0][column]=period&sort[0][direction]=desc" +
-                "&offset=0&length=5000" +
-                $"&api_key={apiKey}";
-        }
-
-        private async Task RefreshFromEiaIfEmptyAsync()
-        {
-            if (await _outageService.HasAnyDataAsync())
-                return;
-
-            _logger.LogInformation("No data in database yet -- fetching from EIA API...");
-
-            var client = _httpClientFactory.CreateClient("EIA_API");
-            HttpResponseMessage response = await client.GetAsync(_apiPath);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("EIA API request failed: {StatusCode}", response.StatusCode);
-                return;
-            }
-
-            string body = await response.Content.ReadAsStringAsync();
-            EiaRoot? apiData = JsonConvert.DeserializeObject<EiaRoot>(body);
-
-            if (apiData?.response?.data == null)
-            {
-                _logger.LogWarning("EIA API returned null or empty data.");
-                return;
-            }
-
-            int inserted = await _outageService.UpsertFromEiaAsync(apiData.response.data);
-            _logger.LogInformation("Inserted {Count} new outage records.", inserted);
+            _ingestionService = ingestionService;
         }
 
         public async Task<IActionResult> Index()
         {
-            await RefreshFromEiaIfEmptyAsync();
+            // No longer fetches on page load -- data ingestion is now
+            // handled by EiaIngestionBackgroundService on a schedule (see
+            // Step 2 in the README). This just reads whatever's in the
+            // database.
             var outagesList = await _outageService.GetAllOutagesAsync();
             return View(outagesList);
         }
@@ -150,9 +96,23 @@ namespace MVC_EF_Start_8.Controllers
             return RedirectToAction("Read");
         }
 
+        /// <summary>
+        /// Manual trigger for an immediate ingestion run, on top of the
+        /// scheduled background job -- useful for demoing without waiting
+        /// for the interval, or forcing a refresh right after deploying.
+        /// Calls the exact same EiaIngestionService the background
+        /// service uses, so there's no separate/duplicate ingestion logic.
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> RefreshNow()
+        {
+            int inserted = await _ingestionService.IngestAsync();
+            TempData["RefreshMessage"] = $"Ingestion run complete: {inserted} new record(s) added.";
+            return RedirectToAction("Read");
+        }
+
         public async Task<IActionResult> DataVisualization()
         {
-            await RefreshFromEiaIfEmptyAsync();
             var outagesList = await _outageService.GetAllOutagesAsync();
             return View(outagesList);
         }
