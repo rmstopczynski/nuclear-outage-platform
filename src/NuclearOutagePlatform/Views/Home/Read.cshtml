@@ -50,6 +50,15 @@
                 <td>
                     <a asp-action="Update" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Update</a>
                     <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete</a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <form asp-controller="Watchlist" asp-action="Add" method="post" style="display: inline;">
+                            <input type="hidden" name="facility" value="@item.Facility" />
+                            <input type="hidden" name="facilityName" value="@item.FacilityName" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <button type="submit" class="btn btn-info btn-sm">Watch</button>
+                        </form>
+                    }
                 </td>
             </tr>
         }

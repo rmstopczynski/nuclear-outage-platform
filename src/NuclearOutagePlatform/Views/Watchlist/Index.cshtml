@@ -1,0 +1,54 @@
+@model List<MVC_EF_Start_8.Models.OutageRecord>
+
+@{
+    ViewData["Title"] = "My Watchlist";
+    Layout = "_Layout";
+}
+
+<h2>My Watchlist</h2>
+
+@if (Model.Count == 0)
+{
+    <p>
+        You aren't watching any facilities yet. Add some from the
+        <a asp-controller="Home" asp-action="Read">Outages</a> page.
+    </p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Facility</th>
+                <th>Facility Name</th>
+                <th>Period</th>
+                <th>Generator</th>
+                <th>Capacity</th>
+                <th>Outage</th>
+                <th>% Outage</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.Facility</td>
+                    <td>@item.FacilityName</td>
+                    <td>@item.Period</td>
+                    <td>@item.Generator</td>
+                    <td>@item.Capacity</td>
+                    <td>@item.Outage</td>
+                    <td>@item.PercentOutage</td>
+                    <td>
+                        <form asp-controller="Watchlist" asp-action="Remove" method="post" style="display: inline;">
+                            <input type="hidden" name="facility" value="@item.Facility" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <button type="submit" class="btn btn-danger btn-sm">Unwatch</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

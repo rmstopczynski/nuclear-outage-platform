@@ -1,4 +1,8 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using MVC_EF_Start_8.Controllers;
 using MVC_EF_Start_8.DataAccess;
 using MVC_EF_Start_8.Services;
 
@@ -40,6 +44,55 @@ builder.Services.AddHttpClient("EIA_API", client =>
 builder.Services.AddScoped<EiaIngestionService>();
 builder.Services.AddHostedService<EiaIngestionBackgroundService>();
 
+// --- Auth (Step 3) -------------------------------------------------------
+// AuthService and WatchlistService both depend on ApplicationDbContext, so
+// both are Scoped -- same reasoning as OutageService above.
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<WatchlistService>();
+
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "NuclearOutagePlatform";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "NuclearOutagePlatform";
+
+// JWT stored in an HttpOnly cookie rather than a bearer header -- this is a
+// server-rendered MVC app with full-page navigations, not a JS client that
+// can attach an Authorization header. OnMessageReceived pulls the token
+// out of the cookie instead of expecting the standard header. The same
+// scheme (and the same login/register endpoints) would also accept a real
+// "Authorization: Bearer" header with zero changes, which is what lets
+// Step 6's React frontend reuse this without a rewrite.
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(2),
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue(AuthController.AuthCookieName, out var token))
+                {
+                    context.Token = token;
+                }
+                return Task.CompletedTask;
+            },
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 // --- MVC ---------------------------------------------------------------
 builder.Services.AddControllersWithViews();
 
@@ -64,6 +117,13 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// UseAuthentication() was missing entirely before Step 3 -- only
+// UseAuthorization() existed. Without it, [Authorize] attributes have
+// nothing populating User.Identity/claims from the incoming request, so
+// they'd either reject everyone or (depending on defaults) do nothing
+// useful at all. Must come before UseAuthorization() in the pipeline.
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

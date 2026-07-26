@@ -18,6 +18,16 @@
     <!-- Only one Newtonsoft.Json reference now: the original .csproj had
          this exact same line listed twice. -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Step 3: JWT auth. Version pinned to 8.0.4 to match the other
+         Microsoft.* packages above -- unverified against NuGet (no network
+         access from this sandbox to nuget.org). Flagged in the README as
+         the highest-risk unverified piece of this step, same category as
+         the Spark image tag that turned out wrong in the healthcare
+         project. If `dotnet restore` fails on this line, either delete the
+         explicit Version attribute and let restore pick a compatible one,
+         or run `dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer`
+         locally to auto-resolve a working version. -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.4" />
   </ItemGroup>
 
 </Project>

@@ -18,7 +18,21 @@
             <li><a asp-controller="Home" asp-action="About">About Us</a></li>
             <li><a asp-controller="Home" asp-action="DataVisualization">Data Visualization</a></li>
             <li><a asp-controller="Home" asp-action="Read">Outages</a></li>
-     
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <li><a asp-controller="Watchlist" asp-action="Index">My Watchlist</a></li>
+                <li>Signed in as @User.Identity!.Name</li>
+                <li>
+                    <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-link">Logout</button>
+                    </form>
+                </li>
+            }
+            else
+            {
+                <li><a asp-controller="Auth" asp-action="Login">Login</a></li>
+                <li><a asp-controller="Auth" asp-action="Register">Register</a></li>
+            }
         </ul>
     </nav>
 

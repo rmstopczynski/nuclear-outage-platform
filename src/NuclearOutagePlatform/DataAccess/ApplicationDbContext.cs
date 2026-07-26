@@ -17,6 +17,10 @@ namespace MVC_EF_Start_8.DataAccess
 
         public DbSet<OutageRecord> Outages { get; set; } = null!;
 
+        // Step 3: auth + watchlists (see README's Step 3 section).
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<WatchlistItem> WatchlistItems { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -27,6 +31,18 @@ namespace MVC_EF_Start_8.DataAccess
             // EIA has no way to know "have I already seen this row."
             modelBuilder.Entity<OutageRecord>()
                 .HasIndex(o => new { o.Facility, o.Generator, o.Period })
+                .IsUnique();
+
+            // One account per email; login looks users up by email.
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            // A user can only watch a given facility once -- also enforced
+            // in WatchlistService.AddAsync before hitting the DB, but the
+            // index is the real guarantee.
+            modelBuilder.Entity<WatchlistItem>()
+                .HasIndex(w => new { w.UserId, w.Facility })
                 .IsUnique();
         }
     }
