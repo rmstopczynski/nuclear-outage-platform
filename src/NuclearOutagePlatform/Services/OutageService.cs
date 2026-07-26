@@ -69,6 +69,86 @@ namespace MVC_EF_Start_8.Services
         }
 
         /// <summary>
+        /// Filtered, paged query backing the REST API's list endpoint
+        /// (GET /api/outages). Facility/date-range filters are the
+        /// "facility/generator filters" the plan calls for; pagination is
+        /// here because "return every row ever ingested" doesn't scale
+        /// once this has been running a while.
+        /// </summary>
+        public async Task<(List<OutageRecord> Items, int TotalCount)> QueryAsync(
+            string? facility,
+            DateOnly? from,
+            DateOnly? to,
+            int page,
+            int pageSize)
+        {
+            var query = _context.Outages.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(facility))
+            {
+                query = query.Where(o =>
+                    o.Facility.Contains(facility) || o.FacilityName.Contains(facility));
+            }
+
+            if (from.HasValue)
+                query = query.Where(o => o.Period >= from.Value);
+
+            if (to.HasValue)
+                query = query.Where(o => o.Period <= to.Value);
+
+            int totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(o => o.Period)
+                .ThenByDescending(o => o.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        /// <summary>
+        /// Daily total outage MW, optionally filtered to one facility and/or
+        /// a date range -- backs GET /api/outages/trends. Same aggregation
+        /// shape as the dashboard's GetChartData, but exposed as a proper
+        /// reusable service method instead of being inlined in a
+        /// controller action.
+        /// </summary>
+        public async Task<List<(DateOnly Period, decimal TotalOutage, int RecordCount)>> GetDailyTrendAsync(
+            string? facility,
+            DateOnly? from,
+            DateOnly? to)
+        {
+            var query = _context.Outages.Where(o => o.Outage != null && o.Outage > 0);
+
+            if (!string.IsNullOrWhiteSpace(facility))
+            {
+                query = query.Where(o =>
+                    o.Facility.Contains(facility) || o.FacilityName.Contains(facility));
+            }
+
+            if (from.HasValue)
+                query = query.Where(o => o.Period >= from.Value);
+
+            if (to.HasValue)
+                query = query.Where(o => o.Period <= to.Value);
+
+            var grouped = await query
+                .GroupBy(o => o.Period)
+                .Select(g => new
+                {
+                    Period = g.Key,
+                    TotalOutage = g.Sum(o => o.Outage!.Value),
+                    RecordCount = g.Count(),
+                })
+                .OrderBy(g => g.Period)
+                .ToListAsync();
+
+            return grouped.Select(g => (g.Period, g.TotalOutage, g.RecordCount)).ToList();
+        }
+
+        /// <summary>
         /// Upserts a batch of freshly-fetched EIA records. Existing rows
         /// (matched on the Facility+Generator+Period unique index) are
         /// left alone; only genuinely new rows get inserted. This replaces

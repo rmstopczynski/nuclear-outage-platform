@@ -150,32 +150,63 @@ host-side port numbers differ.
         ├── Program.cs
         ├── appsettings.json
         ├── Controllers/
-        │   └── HomeController.cs
+        │   ├── HomeController.cs
+        │   ├── AuthController.cs
+        │   ├── WatchlistController.cs
+        │   └── Api/
+        │       └── OutagesApiController.cs   # REST API (Step 4)
         ├── DataAccess/
         │   └── ApplicationDbContext.cs
         ├── Models/
         │   ├── OutageRecord.cs       # real EF Core entity
         │   ├── EiaOutageDto.cs        # raw EIA API response shape
         │   ├── ChartDataViewModel.cs
-        │   └── FacilityRegionMap.cs
+        │   ├── FacilityRegionMap.cs
+        │   ├── User.cs, WatchlistItem.cs
+        │   ├── RegisterViewModel.cs, LoginViewModel.cs
+        │   └── Api/
+        │       ├── OutageDto.cs, OutageWriteRequest.cs
+        │       ├── PagedResult.cs
+        │       └── TrendResponseDto.cs
         ├── Services/
-        │   └── OutageService.cs      # DB-backed, replaces the in-memory Singleton
+        │   ├── OutageService.cs      # DB-backed, replaces the in-memory Singleton
+        │   ├── EiaIngestionService.cs, EiaIngestionBackgroundService.cs
+        │   ├── AuthService.cs, PasswordHasher.cs
+        │   └── WatchlistService.cs
         ├── Views/
         └── wwwroot/
 ```
 
 ## Roadmap
 
+This roadmap was revised partway through the project. Steps 1-2 were built
+under a generic "keep adding full-stack features" plan (search/filter, CI,
+a React frontend, live deployment). Starting at Step 4, the project follows
+a more targeted plan aimed at the specific backend/software-engineering
+roles this portfolio is for: a real REST API layer, one small,
+well-justified AI feature, and an optional MCP server — deliberately
+*not* a React rewrite or a CI pipeline, since those don't add to the
+specific story this project is telling. Step 3 (auth/watchlists) was
+already built before the pivot and is kept as-is; it isn't required by the
+new plan but isn't in conflict with it either.
+
 1. ✅ **Foundation** — real persistence, secrets cleanup, bug fixes, Docker
 2. ✅ **Scheduled background ingestion** — `BackgroundService` running for the
-   app's lifetime, replacing fetch-on-page-load (this step)
-3. JWT authentication, user accounts, watchlists
-4. Search/filter improvements on the outage list
-5. GitHub Actions CI (build + test on push; the original had a working
-   build pipeline, just pointed at a now-dead Azure deploy target)
-6. React frontend, replacing Razor views
-7. Full Docker Compose for local dev (app + Postgres + any added services)
-8. Live deployment to Render
+   app's lifetime, replacing fetch-on-page-load
+3. ✅ **JWT authentication, user accounts, watchlists**
+4. ✅ **REST API layer** — CRUD, facility/date-range filters, trend
+   aggregation, proper DTOs and pagination (this step)
+5. Small AI-assisted outage summary (bounded OpenAI API call over
+   structured data, not a chat feature)
+6. (Optional) MCP server exposing outage data as a couple of tools, only
+   if it's a genuine, demoable integration
+7. Polish + documentation — fresh README pass, screenshots, defense notes
+
+Dropped from the original plan (not being built): search/filter as a
+separate step (folded into Step 4's API filters instead), GitHub Actions
+CI, a React frontend, and live deployment to Render. None of these serve
+the project's current, more targeted story; they could be revisited later
+if the goals change again.
 
 ## Step 2: Scheduled background ingestion
 
@@ -202,7 +233,68 @@ fresh DI scope via `IServiceScopeFactory` on every run rather than
 holding one long-lived instance — avoiding a repeat of the exact
 Singleton-holding-Scoped-dependency bug documented in Step 1's audit.
 
-## Challenges encountered (and how they were resolved)
+## Step 3: JWT authentication, user accounts, watchlists
+
+Added real accounts on top of the existing outage-tracking features:
+register/login with a JWT stored in an **HttpOnly cookie** (not a bearer
+header — this is a server-rendered MVC app with full-page navigations, not
+a JS client that could attach an `Authorization` header on every
+navigation). ASP.NET Core's JWT Bearer handler is configured with a custom
+`OnMessageReceived` event that pulls the token out of the cookie instead of
+expecting the header. The same scheme would accept a real `Authorization:
+Bearer` header from a future SPA client with zero rearchitecture.
+
+Password hashing is hand-rolled PBKDF2 via `Rfc2898DeriveBytes` (random
+salt, 100k iterations, SHA256, timing-safe comparison), not
+`Microsoft.AspNetCore.Identity`'s `PasswordHasher<T>` — deliberately
+avoiding pulling in the full Identity membership system for something this
+scoped. Stored as `"{iterations}.{salt}.{hash}"` so the iteration count can
+be raised later without invalidating existing hashes.
+
+The cookie's `Secure` flag is conditional (`Secure = Request.IsHttps`), not
+hardcoded `true` — the app runs over plain HTTP in local Docker
+(`http://localhost:8090`); a hardcoded `Secure` cookie would silently never
+get sent back by the browser there, breaking login locally, while still
+becoming properly secure automatically once deployed with real HTTPS.
+
+Also fixed during this step: `app.UseAuthentication()` was missing
+entirely from `Program.cs` (only `UseAuthorization()` existed) — without
+it, `[Authorize]` has nothing populating the request's identity/claims, so
+it wouldn't have worked at all once added.
+
+Users can now follow specific facilities from the Outages page and see a
+personalized filtered view at `/Watchlist`.
+
+## Step 4: REST API layer
+
+Added a proper JSON REST API (`Controllers/Api/OutagesApiController.cs`,
+routed at `/api/outages`), distinct from the existing Razor/MVC pages in
+`HomeController`. This is the piece the project's current plan calls for
+as its own architecture box, separate from the web dashboard — something a
+script, another service, or (in Steps 5-6) the AI summary feature or an
+MCP server can call directly instead of going through HTML pages.
+
+- `GET /api/outages` — paged, filterable by `facility` (matches short code
+  or full name) and a `from`/`to` date range
+- `GET /api/outages/{id}`
+- `GET /api/outages/trends` — daily total outage MW, optionally scoped to
+  one facility and/or a date range
+- `POST` / `PUT /{id}` / `DELETE /{id}` — full CRUD, with dedicated
+  request/response DTOs (`OutageWriteRequest`, `OutageDto`) rather than
+  binding directly to the EF entity, to avoid over-posting (a client
+  shouldn't be able to set `Id`/`CreatedAt` on create)
+
+Validation and error handling: `[ApiController]` gives automatic 400
+responses for invalid input (missing required fields, out-of-range
+values via `[Range]`); unexpected failures are caught, logged via
+`ILogger`, and returned as a 500 `ProblemDetails` instead of leaking a raw
+exception. Read endpoints are anonymous, matching the existing MVC pages'
+permissions; write endpoints are anonymous too for now, same as the
+existing MVC Create/Update/Delete actions — not a new gap introduced here,
+just not yet tightened (a reasonable next hardening step, out of scope for
+"add the API layer").
+
+
 
 - **The \"database\" wasn't real.** Confirmed by actually reading
   `ApplicationDbContext` rather than assuming EF Core code that compiles
