@@ -515,6 +515,76 @@ input:focus, select:focus, textarea:focus {
 .status-chip.status-full .dot { background: var(--signal-red); box-shadow: 0 0 6px rgba(229, 72, 77, 0.6); }
 
 /* ----------
+   Chart cross-filter toolbar
+   ---------- */
+.chart-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+    min-height: 32px;
+}
+
+.chart-filters .filter-label {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px 4px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    background: rgba(245, 166, 35, 0.12);
+    border: 1px solid var(--signal-amber-dim);
+    color: var(--signal-amber);
+}
+
+.filter-chip button {
+    background: none;
+    border: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 50%;
+}
+
+.filter-chip button:hover {
+    background: rgba(245, 166, 35, 0.25);
+}
+
+.filter-clear-all {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    text-decoration: underline;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 4px 0;
+}
+
+.filter-clear-all:hover {
+    color: var(--text-primary);
+}
+
+.chart-hint {
+    font-size: 0.78rem;
+    color: var(--text-faint);
+    margin-top: 8px;
+    text-align: center;
+}
+
+/* ----------
    Charts
    ---------- */
 .chart-container {
@@ -530,9 +600,18 @@ input:focus, select:focus, textarea:focus {
     margin-bottom: 1rem;
 }
 
+.chart-canvas-wrap {
+    position: relative;
+    height: 300px;
+}
+
+.chart-canvas-wrap--tall {
+    height: 380px;
+}
+
 canvas {
     width: 100% !important;
-    height: 300px !important;
+    height: 100% !important;
 }
 
 /* ----------

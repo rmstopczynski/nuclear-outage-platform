@@ -6,22 +6,37 @@
 
 <section class="intro">
     <h2>@ViewData["Title"]</h2>
-    <p>Trends across the last 30 days of ingested outage data.</p>
+    <p>
+        Trends across the last 30 days of ingested outage data. Click a day, a
+        facility bar, or a region bar to filter the other two charts &mdash;
+        click the same one again to clear it.
+    </p>
 </section>
+
+<div id="chart-filters" class="chart-filters"></div>
 
 <div class="chart-container">
     <h3>Daily Nuclear Outage (Last 30 Days, MW)</h3>
-    <canvas id="lineChart"></canvas>
+    <div class="chart-canvas-wrap">
+        <canvas id="lineChart"></canvas>
+    </div>
+    <p class="chart-hint">Click a point to filter by day</p>
 </div>
 
 <div class="chart-row">
     <div class="chart-container">
-        <h3>Total Outage by Generator (MW)</h3>
-        <canvas id="barChart"></canvas>
+        <h3>Top Facilities by Outage (MW)</h3>
+        <div class="chart-canvas-wrap chart-canvas-wrap--tall">
+            <canvas id="facilityChart"></canvas>
+        </div>
+        <p class="chart-hint">Click a bar to filter by facility</p>
     </div>
     <div class="chart-container">
-        <h3>Frequency of Outages</h3>
-        <canvas id="pieChart"></canvas>
+        <h3>Outage by Region (MW)</h3>
+        <div class="chart-canvas-wrap chart-canvas-wrap--tall">
+            <canvas id="regionChart"></canvas>
+        </div>
+        <p class="chart-hint">Click a bar to filter by region</p>
     </div>
 </div>
 

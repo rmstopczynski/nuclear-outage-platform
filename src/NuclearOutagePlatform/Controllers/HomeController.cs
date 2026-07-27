@@ -117,69 +117,69 @@ namespace MVC_EF_Start_8.Controllers
             return View(outagesList);
         }
 
+        /// <summary>
+        /// Backs the Data Visualization page's three interactive,
+        /// cross-filtering charts. Returns raw (last-30-days) rows with
+        /// region already resolved server-side, rather than three fixed
+        /// pre-aggregated series -- aggregation now happens client-side
+        /// in site.js, recomputed on every click so selecting a day,
+        /// facility, or region filters the other two charts. ~30 days
+        /// worth of rows is small enough (a few hundred) to ship whole
+        /// and filter in the browser instead of round-tripping to the
+        /// server on every click.
+        /// </summary>
         public async Task<IActionResult> GetChartData()
         {
-            var outagesList = await _outageService.GetAllOutagesAsync();
-            var facilityRegionMap = FacilityRegionMap.Regions;
+            var last30Days = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+            var outagesList = (await _outageService.GetAllOutagesAsync())
+                .Where(o => o.Period >= last30Days)
+                .ToList();
 
-            var dailyOutageMap = new Dictionary<DateOnly, decimal>();
-            var generatorOutageMap = new Dictionary<string, decimal>();
-            var generatorFrequencyMap = new Dictionary<string, int>();
+            var records = outagesList
+                .Where(o => o.Outage.HasValue && o.Outage.Value > 0 && !string.IsNullOrWhiteSpace(o.FacilityName))
+                .Select(o => new
+                {
+                    period = o.Period.ToString("yyyy-MM-dd"),
+                    facility = o.Facility,
+                    facilityName = o.FacilityName.Trim(),
+                    region = ResolveRegion(o.FacilityName.Trim()),
+                    outage = o.Outage!.Value
+                })
+                .OrderBy(r => r.period)
+                .ToList();
 
-            foreach (var outage in outagesList)
+            return Json(new { windowDays = 30, records });
+        }
+
+        /// <summary>
+        /// Looks up a facility's grid region. Tries an exact (case-
+        /// insensitive) match first, then a bidirectional substring check
+        /// -- the previous version only checked
+        /// <c>rawName.Contains(mapKey)</c>, which silently never matched
+        /// when the map's keys were longer than what EIA actually sends
+        /// (e.g. rawName "Cooper" can't contain "Cooper Nuclear Station").
+        /// Checking both directions, plus keying the map on EIA's actual
+        /// short names (see FacilityRegionMap), is what actually fixed the
+        /// "everything says Unknown" bug rather than papering over it.
+        /// </summary>
+        private static string ResolveRegion(string rawName)
+        {
+            foreach (var kvp in FacilityRegionMap.Regions)
             {
-                if (!outage.Outage.HasValue || outage.Outage.Value <= 0)
-                    continue;
-                if (string.IsNullOrWhiteSpace(outage.FacilityName))
-                    continue;
-
-                dailyOutageMap[outage.Period] = dailyOutageMap.GetValueOrDefault(outage.Period) + outage.Outage.Value;
-
-                string rawName = outage.FacilityName.Trim();
-                string region = facilityRegionMap.TryGetValue(rawName, out var exactRegion)
-                    ? exactRegion
-                    : facilityRegionMap.FirstOrDefault(kvp => rawName.Contains(kvp.Key)).Value ?? "Unknown";
-
-                string label = $"{rawName} ({region})";
-                generatorOutageMap[label] = generatorOutageMap.GetValueOrDefault(label) + outage.Outage.Value;
-                generatorFrequencyMap[label] = generatorFrequencyMap.GetValueOrDefault(label) + 1;
+                if (string.Equals(kvp.Key, rawName, StringComparison.OrdinalIgnoreCase))
+                    return kvp.Value;
             }
 
-            var last30Days = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
-            var sortedDailyOutages = dailyOutageMap
-                .Where(kv => kv.Key >= last30Days)
-                .OrderBy(kv => kv.Key)
-                .ToList();
-
-            var sortedTopGeneratorOutages = generatorOutageMap
-                .OrderByDescending(kv => kv.Value)
-                .Take(10)
-                .ToList();
-            var sortedTopGeneratorFrequencies = generatorFrequencyMap
-                .OrderByDescending(kv => kv.Value)
-                .Take(10)
-                .ToList();
-
-            var response = new
+            foreach (var kvp in FacilityRegionMap.Regions)
             {
-                dailyOutages = new
+                if (rawName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                    kvp.Key.Contains(rawName, StringComparison.OrdinalIgnoreCase))
                 {
-                    labels = sortedDailyOutages.Select(kv => kv.Key.ToString("yyyy-MM-dd")).ToList(),
-                    values = sortedDailyOutages.Select(kv => kv.Value).ToList()
-                },
-                generatorOutages = new
-                {
-                    labels = sortedTopGeneratorOutages.Select(kv => kv.Key).ToList(),
-                    values = sortedTopGeneratorOutages.Select(kv => kv.Value).ToList()
-                },
-                generatorFrequency = new
-                {
-                    labels = sortedTopGeneratorFrequencies.Select(kv => kv.Key).ToList(),
-                    values = sortedTopGeneratorFrequencies.Select(kv => kv.Value).ToList()
+                    return kvp.Value;
                 }
-            };
+            }
 
-            return Json(response);
+            return "Other";
         }
 
         public IActionResult About() => View();

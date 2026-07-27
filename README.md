@@ -556,6 +556,41 @@ plant outage monitor &mdash; rather than a generic dashboard reskin:
   Chart.js's default teal/dark-green, and a guard was added so the chart
   setup only runs on pages that actually have the canvases &mdash; it was
   previously running (and silently failing) on every page site-wide.
+- **Fixed a real bug behind the "everything says Unknown" complaint**,
+  not just a display issue: `FacilityRegionMap`'s keys were long official
+  NRC names ("Cooper Nuclear Station"), but `HomeController` matched them
+  against EIA's actual short `facilityName` values ("Cooper") with
+  `rawName.Contains(mapKey)` &mdash; a short string can never contain a
+  longer one, so that match almost never succeeded. Rebuilt the map keyed
+  on EIA's real short names, and fixed the matching to check both
+  directions, case-insensitively.
+- **Replaced the "Frequency of Outages" pie chart** with a facility bar
+  chart (top 10 by outage MW) and a region bar chart, both horizontal.
+  Pie charts don't work well past 3-4 categories &mdash; comparing slice
+  angles is a harder visual task than comparing bar lengths, and thin
+  slices are small, fiddly hover targets. Horizontal bars also mean full
+  facility names are readable directly on the axis, no truncation needed.
+- **Bounded all three charts to the same rolling 30-day window.** The
+  facility/region totals previously summed the app's *entire* ingestion
+  history with no indication of that in the title, inconsistent with the
+  daily trend chart sitting right next to them.
+- Improved the daily trend chart's hover behavior (`interaction: {mode:
+  'index', intersect: false}`, larger hit radius) so a tooltip appears
+  anywhere along a day's vertical slice, not only when the cursor lands
+  exactly on a point.
+- **Made the three charts cross-filter each other.** Clicking a day,
+  facility bar, or region bar filters the other two charts to just that
+  selection (click the same one again to clear it). `GET /Home/GetChartData`
+  now returns raw per-record rows (region pre-resolved server-side)
+  instead of three fixed pre-aggregated series &mdash; a month of data is
+  small enough (a few hundred rows) to ship once and re-aggregate
+  client-side on every click, rather than round-tripping to the server
+  for each interaction. Each chart is filtered by the *other* two
+  dimensions, not its own, so e.g. the daily chart still shows every day
+  (so you can pick a different one) while narrowing to the selected
+  facility/region; the selected bar/point is highlighted and the others
+  dim rather than disappearing, so the rest of the data stays visible for
+  comparison.
 
 ## Defense sheet — questions to be ready for
 
