@@ -6,6 +6,35 @@ API](https://www.eia.gov/opendata/). Originally a group project for a
 university course (ISM6225); this repo is a solo continuation and rebuild,
 starting from that codebase but under new, independent ownership.
 
+## Screenshots
+
+### Home
+![Home page: nav, hero copy describing the live EIA data pipeline, and a feature list](docs/screenshots/home.png)
+
+### Outages — status chips
+![Outages table with green/amber/red status chips and grouped action buttons](docs/screenshots/outages-table.png)
+
+### Data Visualization — default view
+![Data Visualization page with all three charts and the AI summary card, no filters applied](docs/screenshots/data-viz-default.png)
+
+### Data Visualization — cross-filtered
+![Same page after clicking a region or facility bar, showing active filter chips and dimmed/highlighted bars](docs/screenshots/data-viz-filtered.png)
+
+### AI outage summary
+![AI Outage Summary card showing a real generated plain-English summary](docs/screenshots/ai-summary-result.png)
+
+### Watchlist
+![Logged-in Watchlist view showing a followed facility's outage history](docs/screenshots/watchlist.png)
+
+### Login / Register
+![Auth card UI for logging in or creating an account](docs/screenshots/login-register.png)
+
+### About — data model
+![About page showing the current SVG data model diagram: User, WatchlistItem, OutageRecord](docs/screenshots/about-data-model.png)
+
+### MCP Inspector — tool call result
+![MCP Inspector showing a real tool call result from get_recent_outages](docs/screenshots/mcp-inspector.png)
+
 ## Origin and rebuild scope
 
 The original group project is preserved at
