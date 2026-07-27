@@ -5,36 +5,38 @@
     Layout = "_Layout";
 }
 
-<h2>Create an Account</h2>
+<div class="auth-card">
+    <h2>Create an Account</h2>
 
-<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-controller="Auth" asp-action="Register" method="post">
-    <div>
-        <label asp-for="Username"></label>
-        <input asp-for="Username" required />
-        <span asp-validation-for="Username" class="text-danger"></span>
-    </div>
+    <form asp-controller="Auth" asp-action="Register" method="post">
+        <div>
+            <label asp-for="Username"></label>
+            <input asp-for="Username" required />
+            <span asp-validation-for="Username" class="text-danger"></span>
+        </div>
 
-    <div>
-        <label asp-for="Email"></label>
-        <input asp-for="Email" required />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
+        <div>
+            <label asp-for="Email"></label>
+            <input asp-for="Email" required />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
 
-    <div>
-        <label asp-for="Password"></label>
-        <input asp-for="Password" required />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
+        <div>
+            <label asp-for="Password"></label>
+            <input asp-for="Password" required />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
 
-    <div>
-        <label asp-for="ConfirmPassword"></label>
-        <input asp-for="ConfirmPassword" required />
-        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-    </div>
+        <div>
+            <label asp-for="ConfirmPassword"></label>
+            <input asp-for="ConfirmPassword" required />
+            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+        </div>
 
-    <button type="submit" class="btn btn-primary">Register</button>
-</form>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+    </form>
 
-<p>Already have an account? <a asp-controller="Auth" asp-action="Login">Log in</a></p>
+    <p>Already have an account? <a asp-controller="Auth" asp-action="Login">Log in</a></p>
+</div>

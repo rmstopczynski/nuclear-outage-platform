@@ -1,0 +1,74 @@
+<svg viewBox="0 0 980 460" xmlns="http://www.w3.org/2000/svg" font-family="'IBM Plex Mono', monospace">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#8FA69B" />
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="980" height="460" fill="none" />
+
+  <!-- Connector: User -> WatchlistItem (real FK) -->
+  <line x1="266" y1="150" x2="358" y2="150" stroke="#4CD787" stroke-width="1.5" marker-end="url(#arrow)" />
+  <text x="270" y="140" fill="#4CD787" font-size="11">1 : many (UserId FK)</text>
+
+  <!-- Connector: WatchlistItem -> OutageRecord (logical, not FK) -->
+  <line x1="622" y1="150" x2="714" y2="150" stroke="#8FA69B" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)" />
+  <text x="628" y="140" fill="#8FA69B" font-size="11">joined by Facility code</text>
+  <text x="628" y="168" fill="#5C7268" font-size="10">(app-level, not a DB FK)</text>
+
+  <!-- ============ User ============ -->
+  <g transform="translate(40,40)">
+    <rect width="226" height="230" rx="10" fill="#16211C" stroke="#2A3B33" />
+    <rect width="226" height="36" rx="10" fill="#0B100D" />
+    <rect y="26" width="226" height="10" fill="#0B100D" />
+    <text x="16" y="24" fill="#E8EDE9" font-size="14" font-weight="600">User</text>
+
+    <text x="16" y="58" fill="#F5A623" font-size="12">PK  Id</text>
+    <text x="16" y="82" fill="#E8EDE9" font-size="12">Username</text>
+    <text x="16" y="106" fill="#4CD787" font-size="12">UQ  Email</text>
+    <text x="16" y="130" fill="#E8EDE9" font-size="12">PasswordHash</text>
+    <text x="70" y="130" fill="#5C7268" font-size="10">{iter}.{salt}.{hash}</text>
+    <text x="16" y="154" fill="#E8EDE9" font-size="12">CreatedAt</text>
+    <text x="16" y="204" fill="#8FA69B" font-size="10">hand-rolled PBKDF2, no</text>
+    <text x="16" y="218" fill="#8FA69B" font-size="10">Identity package (see README)</text>
+  </g>
+
+  <!-- ============ WatchlistItem ============ -->
+  <g transform="translate(358,40)">
+    <rect width="264" height="230" rx="10" fill="#16211C" stroke="#2A3B33" />
+    <rect width="264" height="36" rx="10" fill="#0B100D" />
+    <rect y="26" width="264" height="10" fill="#0B100D" />
+    <text x="16" y="24" fill="#E8EDE9" font-size="14" font-weight="600">WatchlistItem</text>
+
+    <text x="16" y="58" fill="#F5A623" font-size="12">PK  Id</text>
+    <text x="16" y="82" fill="#4CD787" font-size="12">FK  UserId</text>
+    <text x="16" y="106" fill="#E8EDE9" font-size="12">Facility</text>
+    <text x="16" y="130" fill="#E8EDE9" font-size="12">FacilityName</text>
+    <text x="16" y="154" fill="#E8EDE9" font-size="12">CreatedAt</text>
+    <text x="16" y="204" fill="#8FA69B" font-size="10">unique index on</text>
+    <text x="16" y="218" fill="#8FA69B" font-size="10">(UserId, Facility)</text>
+  </g>
+
+  <!-- ============ OutageRecord ============ -->
+  <g transform="translate(714,20)">
+    <rect width="226" height="330" rx="10" fill="#16211C" stroke="#2A3B33" />
+    <rect width="226" height="36" rx="10" fill="#0B100D" />
+    <rect y="26" width="226" height="10" fill="#0B100D" />
+    <text x="16" y="24" fill="#E8EDE9" font-size="14" font-weight="600">OutageRecord</text>
+
+    <text x="16" y="58" fill="#F5A623" font-size="12">PK  Id</text>
+    <text x="16" y="82" fill="#E8EDE9" font-size="12">Period</text>
+    <text x="16" y="106" fill="#4CD787" font-size="12">UQ  Facility</text>
+    <text x="16" y="130" fill="#E8EDE9" font-size="12">FacilityName</text>
+    <text x="16" y="154" fill="#4CD787" font-size="12">UQ  Generator</text>
+    <text x="16" y="178" fill="#E8EDE9" font-size="12">Capacity</text>
+    <text x="16" y="202" fill="#E8EDE9" font-size="12">Outage</text>
+    <text x="16" y="226" fill="#E8EDE9" font-size="12">PercentOutage</text>
+    <text x="16" y="250" fill="#E8EDE9" font-size="12">CreatedAt</text>
+    <text x="16" y="274" fill="#E8EDE9" font-size="12">UpdatedAt</text>
+    <text x="16" y="304" fill="#8FA69B" font-size="10">UQ = unique index on</text>
+    <text x="16" y="318" fill="#8FA69B" font-size="10">(Facility, Generator, Period)</text>
+  </g>
+
+  <text x="40" y="420" fill="#5C7268" font-size="11">PK = primary key &#160;&#160; FK = foreign key &#160;&#160; UQ = participates in a unique index</text>
+</svg>

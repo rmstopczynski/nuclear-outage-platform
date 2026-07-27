@@ -1,16 +1,16 @@
 @model List<MVC_EF_Start_8.Models.OutageRecord>
 @{
-    ViewData["Title"] = "Data Visualization Dashboard";
+    ViewData["Title"] = "Data Visualization";
     Layout = "_Layout";
 }
 
 <section class="intro">
     <h2>@ViewData["Title"]</h2>
-    <p>Explore interactive charts showcasing our nuclear outage data.</p>
+    <p>Trends across the last 30 days of ingested outage data.</p>
 </section>
 
 <div class="chart-container">
-    <h3>Daily Nuclear Outage (Last 30 Days in MW)</h3>
+    <h3>Daily Nuclear Outage (Last 30 Days, MW)</h3>
     <canvas id="lineChart"></canvas>
 </div>
 
@@ -25,7 +25,7 @@
     </div>
 </div>
 
-<div class="ai-summary-card">
+<div class="panel ai-summary-card">
     <h3>AI Outage Summary <span class="ai-summary-badge">beta</span></h3>
     <p class="ai-summary-hint">
         A short, plain-English summary of recent outage activity, generated
@@ -42,40 +42,9 @@
             flex-wrap: wrap;
             gap: 20px;
         }
-        .chart-container {
+        .chart-row .chart-container {
             flex: 1;
             min-width: 300px;
-        }
-        .ai-summary-card {
-            margin-top: 20px;
-            padding: 16px 20px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background: #fafafa;
-            max-width: 700px;
-        }
-        .ai-summary-badge {
-            font-size: 0.7em;
-            font-weight: normal;
-            color: #666;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 1px 6px;
-            vertical-align: middle;
-        }
-        .ai-summary-hint {
-            color: #555;
-            font-size: 0.9em;
-        }
-        .ai-summary-result {
-            margin-top: 12px;
-            padding: 10px 12px;
-            background: #fff;
-            border-left: 4px solid #00543C;
-        }
-        .ai-summary-result.error {
-            border-left-color: #b00020;
-            color: #b00020;
         }
     </style>
 }

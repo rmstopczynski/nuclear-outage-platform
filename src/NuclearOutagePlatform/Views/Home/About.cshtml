@@ -1,41 +1,36 @@
-﻿@{
+@{
     ViewData["Title"] = "About";
     Layout = "_Layout";
 }
 
 <section class="intro">
-    <h2>About This Project</h2>
+    <h2>About this project</h2>
     <p>
-        A platform tracking U.S. nuclear power plant outages, built on live
-        data from the U.S. Energy Information Administration (EIA) API.
+        A platform tracking U.S. nuclear power plant outages, built on live data from the
+        EIA (U.S. Energy Information Administration) API. Originally a group project for a
+        university course; this repo is a solo rebuild under new ownership &mdash; real Postgres
+        persistence instead of an in-memory list, hardcoded credentials removed, a JSON REST
+        API, a bounded AI-assisted summary feature, and an MCP server for AI clients, all
+        documented (including the real bugs hit along the way) in the repo's README.
     </p>
 </section>
 
-<section class="model-section">
-    <h3>Data Model</h3>
-    <img src="~/images/OutagesERD.png" alt="Data Model" class="model-image" />
+<section class="panel">
+    <h3>Data model</h3>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: -0.5rem;">
+        Three tables: outage records ingested from EIA, user accounts, and per-user facility
+        watchlists. A watchlist entry references a facility by its short code &mdash; a logical
+        join to <span class="mono">OutageRecord</span>, not a database foreign key, since a
+        facility has many outage rows over time.
+    </p>
+    <img src="~/images/data-model.svg" alt="Data model diagram: User, WatchlistItem, and OutageRecord tables and their relationships" class="model-diagram" />
 </section>
 
-<section class="github-section">
+<section class="panel">
     <h3>Source</h3>
-    <a href="https://github.com/rmstopczynski" class="btn" target="_blank">View on GitHub</a>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Full architecture notes, the audit of the original code, and every real bug hit
+        during the rebuild are documented in the repo's README.
+    </p>
+    <a href="https://github.com/rmstopczynski/nuclear-outage-platform" class="btn" target="_blank" rel="noopener">View on GitHub</a>
 </section>
-
-@section Styles {
-    <style>
-        .model-section, .github-section {
-            background-color: var(--usf-white);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .model-image {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-        }
-    </style>
-}

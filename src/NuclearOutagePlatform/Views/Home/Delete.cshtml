@@ -1,4 +1,4 @@
-﻿@model MVC_EF_Start_8.Models.OutageRecord
+@model MVC_EF_Start_8.Models.OutageRecord
 
 @{
     ViewData["Title"] = "Delete";
@@ -7,10 +7,18 @@
 
 <h2>Confirm Deletion</h2>
 
-<p>Are you sure you want to delete the @Model.Period outage record for facility: <strong>@Model.Facility</strong> (@Model.FacilityName)?</p>
+<div class="panel form-card">
+    <p>
+        Are you sure you want to delete the <span class="mono">@Model.Period</span> outage
+        record for facility <strong class="mono">@Model.Facility</strong> (@Model.FacilityName)?
+        This can't be undone.
+    </p>
 
-<form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post">
-    <input type="hidden" asp-for="Id" />
-    <button type="submit">Yes, Delete</button>
-    <a asp-action="Read">Cancel</a>
-</form>
+    <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div class="action-row">
+            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+            <a asp-action="Read" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>

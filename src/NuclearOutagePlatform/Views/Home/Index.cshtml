@@ -1,70 +1,35 @@
-﻿@{
-    ViewData["Title"] = "Home - The Nuclear Dashboard";
+@{
+    ViewData["Title"] = "Home";
     Layout = "_Layout";
 }
 
 <section class="intro">
-    <h2>Welcome to The Nuclear Dashboard</h2>
-    <p>Your premier destination for nuclear outage data and visualization.</p>
+    <h2>Live U.S. nuclear outage data, end to end</h2>
+    <p>
+        This app pulls real outage and generation data from the
+        <a href="https://www.eia.gov/opendata/" target="_blank" rel="noopener">EIA (U.S. Energy Information Administration) API</a>
+        on a recurring schedule, persists it in Postgres, and exposes it three ways: a browsable
+        dashboard, a JSON REST API, and an MCP server for AI clients. Register an account to
+        follow specific facilities and see a filtered view of just the ones you care about.
+    </p>
 </section>
 
 <section class="features">
-    <h3>Why Choose The Nuclear Dashboard?</h3>
+    <h3>What's actually running under the hood</h3>
     <ul>
-        <li>Comprehensive nuclear outage database with real-time insights</li>
-        <li>Interactive data visualization tools</li>
-        <li>User-friendly CRUD operations for data management</li>
-        <li>Responsive design works on all devices</li>
+        <li>Scheduled background ingestion from the EIA API, with idempotent upsert so re-fetching never creates duplicates</li>
+        <li>JWT authentication (HttpOnly cookie) with per-user facility watchlists</li>
+        <li>A JSON REST API at <span class="mono">/api/outages</span> &mdash; CRUD, facility/date filters, and trend aggregation</li>
+        <li>A bounded, single-purpose AI feature that turns a date range of outage rows into a plain-English summary</li>
+        <li>An MCP server exposing outage data as tools for AI clients like Claude Desktop</li>
     </ul>
 </section>
 
 <section class="quick-links">
-    <h3>Get Started</h3>
+    <h3>Get started</h3>
     <div class="link-grid">
-        <a asp-controller="Home" asp-action="About" class="btn">
-            <i class="fas fa-info-circle"></i> About This Project
-        </a>
-        <a asp-controller="Home" asp-action="DataVisualization" class="btn">
-            <i class="fas fa-chart-bar"></i> View Charts
-        </a>
-        <a asp-controller="Home" asp-action="Read" class="btn">
-            <i class="fas fa-database"></i> View Outages
-        </a>
-
+        <a asp-controller="Home" asp-action="Read" class="btn btn-primary">View outages</a>
+        <a asp-controller="Home" asp-action="DataVisualization" class="btn">Explore charts + AI summary</a>
+        <a asp-controller="Home" asp-action="About" class="btn">About this project</a>
     </div>
 </section>
-
-@section Styles {
-    <style>
-        .quick-links {
-            background-color: var(--usf-white);
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 2rem;
-        }
-        
-        .link-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--usf-green);
-            color: var(--usf-green);
-        }
-
-        .btn-outline:hover {
-            background: var(--usf-green);
-            color: white;
-        }
-    
-        .fas {
-            margin-right: 8px;
-        }
-    </style>
-}
-

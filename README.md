@@ -514,6 +514,49 @@ just written):**
   only has to verify an already-current build rather than compile from
   scratch.
 
+## Step 7 (continued): visual design pass
+
+The original UI was leftover styling from the university course this
+project started from &mdash; USF green/gold branding, default Bootstrap
+card shadows on a stark-white background, Arial, and a Font Awesome icon
+reference on the home page that was never actually wired up (no CDN link
+existed, so those icons silently never rendered).
+
+Replaced with a design grounded in the actual subject &mdash; a nuclear
+plant outage monitor &mdash; rather than a generic dashboard reskin:
+
+- **Dark control-room palette** instead of a bright white background:
+  a near-black panel background (`#0E1512`/`#16211C`), off-white text
+  (not stark white, less glare), IBM Plex Sans for headings/body and
+  IBM Plex Mono for every number, facility code, date, and percentage
+  &mdash; reads like an actual telemetry readout instead of prose.
+- **Status chips as the signature element**: a green/amber/red dot +
+  label (nominal / partial outage / offline) shown consistently on the
+  Outages table and Watchlist, borrowed directly from real
+  annunciator-panel status lights rather than an arbitrary badge color
+  scheme. This also directly answers "the visualizations are ugly" by
+  giving the tables actual at-a-glance information structure, not just a
+  recolor.
+- **Fixed the cramped Update/Delete/Watch buttons** with a real
+  `.action-row` flex container (defined gap, not reliance on incidental
+  inline whitespace between elements).
+- **Rebuilt the Create/Update/Login/Register forms** as proper cards with
+  a label/input system (uppercase small-caps labels, monospace inputs,
+  visible focus rings) instead of bare unstyled `<div><label><input>`
+  stacks.
+- **Replaced the stale ERD image** on the About page with a new SVG data
+  model diagram reflecting the *current* schema (`User`, `WatchlistItem`,
+  `OutageRecord`, with the real FK vs. the app-level facility-code join
+  called out explicitly) instead of a pre-Step-3 diagram that predated
+  auth entirely.
+- **Rewrote the home and About page copy**, which had gone stale after
+  Steps 3-6 &mdash; the old copy only described basic CRUD + charts and
+  never mentioned the REST API, AI summary, or MCP server that now exist.
+- Chart.js configs (in `site.js`) now use the same palette instead of
+  Chart.js's default teal/dark-green, and a guard was added so the chart
+  setup only runs on pages that actually have the canvases &mdash; it was
+  previously running (and silently failing) on every page site-wide.
+
 ## Defense sheet — questions to be ready for
 
 - **Why did you rebuild instead of continuing the group project's repo?**

@@ -1,6 +1,6 @@
-﻿@model List<MVC_EF_Start_8.Models.OutageRecord>
+@model List<MVC_EF_Start_8.Models.OutageRecord>
 @{
-    ViewData["Title"] = "Read";
+    ViewData["Title"] = "Outages";
     Layout = "_Layout";
 }
 
@@ -11,56 +11,66 @@
     <div class="alert alert-info">@TempData["RefreshMessage"]</div>
 }
 
-<div style="margin-bottom: 20px;">
+<div class="toolbar">
     <a asp-action="Create" class="btn btn-primary">Create New Record</a>
     <form asp-action="RefreshNow" method="post" style="display: inline;">
         <button type="submit" class="btn btn-secondary">Refresh Now</button>
     </form>
 </div>
 
-<form asp-action="Read" method="get" style="margin-bottom: 20px;">
-    <input type="text" name="searchFacility" placeholder="Enter facility to search..." value="@Context.Request.Query["searchFacility"]" />
+<form asp-action="Read" method="get" class="search-form toolbar">
+    <input type="text" name="searchFacility" placeholder="Search by facility..." value="@Context.Request.Query["searchFacility"]" />
     <button type="submit" class="btn btn-secondary">Search</button>
 </form>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Facility</th>
-            <th>Facility Name</th>
-            <th>Period</th>
-            <th>Generator</th>
-            <th>Capacity</th>
-            <th>Outage</th>
-            <th>% Outage</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
+<div class="table-wrap">
+    <table>
+        <thead>
             <tr>
-                <td>@item.Facility</td>
-                <td>@item.FacilityName</td>
-                <td>@item.Period</td>
-                <td>@item.Generator</td>
-                <td>@item.Capacity</td>
-                <td>@item.Outage</td>
-                <td>@item.PercentOutage</td>
-                <td>
-                    <a asp-action="Update" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Update</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete</a>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <form asp-controller="Watchlist" asp-action="Add" method="post" style="display: inline;">
-                            <input type="hidden" name="facility" value="@item.Facility" />
-                            <input type="hidden" name="facilityName" value="@item.FacilityName" />
-                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                            <button type="submit" class="btn btn-info btn-sm">Watch</button>
-                        </form>
-                    }
-                </td>
+                <th>Facility</th>
+                <th>Facility Name</th>
+                <th>Period</th>
+                <th>Generator</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                var pct = item.PercentOutage ?? 0;
+                string statusClass = pct >= 100 ? "status-full" : pct > 0 ? "status-partial" : "status-nominal";
+                string statusLabel = pct >= 100 ? "Offline" : pct > 0 ? $"{pct:0}% outage" : "Nominal";
+
+                <tr>
+                    <td class="mono">@item.Facility</td>
+                    <td>@item.FacilityName</td>
+                    <td class="mono">@item.Period</td>
+                    <td class="mono">@item.Generator</td>
+                    <td class="mono">@item.Capacity MW</td>
+                    <td>
+                        <span class="status-chip @statusClass">
+                            <span class="dot"></span>@statusLabel
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-row">
+                            <a asp-action="Update" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Update</a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger btn-sm">Delete</a>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <form asp-controller="Watchlist" asp-action="Add" method="post" style="display: inline;">
+                                    <input type="hidden" name="facility" value="@item.Facility" />
+                                    <input type="hidden" name="facilityName" value="@item.FacilityName" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                    <button type="submit" class="btn btn-info btn-sm">Watch</button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

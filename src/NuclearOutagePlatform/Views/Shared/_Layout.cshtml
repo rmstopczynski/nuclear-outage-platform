@@ -4,33 +4,46 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - The Nuclear Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 </head>
 <body>
     <header class="header">
-        <h1>The Nuclear Dashboard</h1>
+        <div class="header-inner">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <div>
+                <span class="eyebrow">EIA live outage telemetry</span>
+                <h1>The Nuclear Dashboard</h1>
+            </div>
+        </div>
     </header>
 
     <nav>
         <ul>
             <li><a asp-controller="Home" asp-action="Index">Home</a></li>
-            <li><a asp-controller="Home" asp-action="About">About Us</a></li>
+            <li><a asp-controller="Home" asp-action="About">About</a></li>
             <li><a asp-controller="Home" asp-action="DataVisualization">Data Visualization</a></li>
             <li><a asp-controller="Home" asp-action="Read">Outages</a></li>
             @if (User.Identity?.IsAuthenticated == true)
             {
                 <li><a asp-controller="Watchlist" asp-action="Index">My Watchlist</a></li>
-                <li>Signed in as @User.Identity!.Name</li>
+            }
+            <li class="nav-spacer"></li>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <li class="nav-user">@User.Identity!.Name</li>
                 <li>
                     <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
-                        <button type="submit" class="btn btn-link">Logout</button>
+                        <button type="submit" class="btn-link">Log out</button>
                     </form>
                 </li>
             }
             else
             {
-                <li><a asp-controller="Auth" asp-action="Login">Login</a></li>
+                <li><a asp-controller="Auth" asp-action="Login">Log in</a></li>
                 <li><a asp-controller="Auth" asp-action="Register">Register</a></li>
             }
         </ul>

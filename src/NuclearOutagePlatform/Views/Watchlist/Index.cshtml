@@ -16,39 +16,47 @@
 }
 else
 {
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Facility</th>
-                <th>Facility Name</th>
-                <th>Period</th>
-                <th>Generator</th>
-                <th>Capacity</th>
-                <th>Outage</th>
-                <th>% Outage</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
+    <div class="table-wrap">
+        <table>
+            <thead>
                 <tr>
-                    <td>@item.Facility</td>
-                    <td>@item.FacilityName</td>
-                    <td>@item.Period</td>
-                    <td>@item.Generator</td>
-                    <td>@item.Capacity</td>
-                    <td>@item.Outage</td>
-                    <td>@item.PercentOutage</td>
-                    <td>
-                        <form asp-controller="Watchlist" asp-action="Remove" method="post" style="display: inline;">
-                            <input type="hidden" name="facility" value="@item.Facility" />
-                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                            <button type="submit" class="btn btn-danger btn-sm">Unwatch</button>
-                        </form>
-                    </td>
+                    <th>Facility</th>
+                    <th>Facility Name</th>
+                    <th>Period</th>
+                    <th>Generator</th>
+                    <th>Capacity</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var pct = item.PercentOutage ?? 0;
+                    string statusClass = pct >= 100 ? "status-full" : pct > 0 ? "status-partial" : "status-nominal";
+                    string statusLabel = pct >= 100 ? "Offline" : pct > 0 ? $"{pct:0}% outage" : "Nominal";
+
+                    <tr>
+                        <td class="mono">@item.Facility</td>
+                        <td>@item.FacilityName</td>
+                        <td class="mono">@item.Period</td>
+                        <td class="mono">@item.Generator</td>
+                        <td class="mono">@item.Capacity MW</td>
+                        <td>
+                            <span class="status-chip @statusClass">
+                                <span class="dot"></span>@statusLabel
+                            </span>
+                        </td>
+                        <td>
+                            <form asp-controller="Watchlist" asp-action="Remove" method="post" style="display: inline;">
+                                <input type="hidden" name="facility" value="@item.Facility" />
+                                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                <button type="submit" class="btn btn-danger btn-sm">Unwatch</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
