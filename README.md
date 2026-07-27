@@ -167,12 +167,14 @@ host-side port numbers differ.
         │   └── Api/
         │       ├── OutageDto.cs, OutageWriteRequest.cs
         │       ├── PagedResult.cs
-        │       └── TrendResponseDto.cs
+        │       ├── TrendResponseDto.cs
+        │       └── OutageSummaryResponseDto.cs
         ├── Services/
         │   ├── OutageService.cs      # DB-backed, replaces the in-memory Singleton
         │   ├── EiaIngestionService.cs, EiaIngestionBackgroundService.cs
         │   ├── AuthService.cs, PasswordHasher.cs
-        │   └── WatchlistService.cs
+        │   ├── WatchlistService.cs
+        │   └── OutageSummaryService.cs, AiSummaryExceptions.cs
         ├── Views/
         └── wwwroot/
 ```
@@ -195,9 +197,9 @@ new plan but isn't in conflict with it either.
    app's lifetime, replacing fetch-on-page-load
 3. ✅ **JWT authentication, user accounts, watchlists**
 4. ✅ **REST API layer** — CRUD, facility/date-range filters, trend
-   aggregation, proper DTOs and pagination (this step)
-5. Small AI-assisted outage summary (bounded OpenAI API call over
-   structured data, not a chat feature)
+   aggregation, proper DTOs and pagination
+5. ✅ **Small AI-assisted outage summary** — bounded LLM API call (Groq,
+   OpenAI-compatible) over structured data, not a chat feature (this step)
 6. (Optional) MCP server exposing outage data as a couple of tools, only
    if it's a genuine, demoable integration
 7. Polish + documentation — fresh README pass, screenshots, defense notes
@@ -294,7 +296,65 @@ existing MVC Create/Update/Delete actions — not a new gap introduced here,
 just not yet tightened (a reasonable next hardening step, out of scope for
 "add the API layer").
 
+## Step 5: AI-assisted outage summary
 
+Added the one AI feature in this project: `GET /api/outages/summary`,
+which pulls the same filtered outage data `GET /api/outages/trends` uses,
+aggregates it per facility, and asks an LLM for a short, plain-English
+summary (2-4 sentences). Surfaced as a small "Generate Summary" card on
+the Data Visualization dashboard, not a redesign of the UI, and not a
+chat interface.
+
+**Why Groq instead of OpenAI:** built against OpenAI first, then switched
+after hitting OpenAI's quota wall (no billing configured on the account).
+Groq's API is OpenAI-compatible — identical request/response shape,
+identical Bearer-token auth — so the swap was a small, contained change
+(base URL, one config section, model name), not a rewrite. Groq also has
+a genuinely free tier with no credit card required, which fits this
+project's existing "avoid unnecessary paid services" pattern (see the
+Postgres-instead-of-Azure-SQL and Render-free-tier reasoning above, and
+MinIO-instead-of-AWS in the healthcare project) better than a
+pay-as-you-go API would have. This is also a decent interview story on
+its own: the code was written against one provider's API and needed only
+a config-level change to run against a different, OpenAI-compatible one,
+because the provider-specific bits were isolated in one service.
+
+**Why this stays this narrow, if asked:** the core value of this app is
+reliable data ingestion, storage, and visualization — an LLM doesn't fix a
+problem that doesn't exist in that layer. The one place natural language
+legitimately helps is turning a wall of tabular outage data into something
+a non-technical stakeholder can skim in one sentence. That's a real,
+bounded use case, not AI for its own sake, and it's why this project
+deliberately excludes things like RAG, a vector database, or a chat
+interface — none of them solve a problem this app actually has.
+
+**Design choices:**
+- The prompt is built from an aggregated summary (per-facility totals,
+  record counts, whether an outage is currently active), not the raw row
+  data — keeps the prompt small and keeps the model from being handed more
+  than it needs to answer the one question being asked of it.
+- The system prompt explicitly tells the model not to invent facts,
+  causes, or numbers beyond what's in the data — the source data has no
+  "scheduled vs. unplanned" field, for example, so the model is told not
+  to guess at that distinction.
+- **No API key is required for the app to start.** `Eia:ApiKey` and
+  `Jwt:Key` are hard dependencies the app throws on at startup if missing;
+  `Groq:ApiKey` is checked lazily, only when `/api/outages/summary` is
+  actually called, and returns a clear `503` ("AI summary feature is not
+  configured") rather than an unrelated crash. This is a genuine optional
+  feature, and the rest of the app shouldn't depend on whether an external
+  AI provider account is fully set up.
+- Failures are split into two distinct cases the client can tell apart:
+  `503` for "this isn't configured at all," `502` for "it's configured but
+  the provider call itself failed" (network error, rate limit, malformed
+  response) — same "handle API issues gracefully, don't crash" approach
+  already used for the EIA ingestion service in Step 2. This distinction
+  is what actually caught the OpenAI billing issue during development: the
+  502 path logged the exact upstream error body (a 429 quota error), which
+  is what prompted the switch to Groq rather than leaving the feature
+  broken.
+
+## Challenges encountered (and how they were resolved)
 
 - **The \"database\" wasn't real.** Confirmed by actually reading
   `ApplicationDbContext` rather than assuming EF Core code that compiles
@@ -311,3 +371,42 @@ just not yet tightened (a reasonable next hardening step, out of scope for
   time-series data. Caught by reading the actual data shape (one
   facility, many dates) rather than trusting that CRUD "worked" in a
   quick manual test.
+- **The XML-comment-`--` bug from Step 1 recurred a third time**, this
+  time in a comment added to the `.csproj` for the new JWT Bearer package
+  reference ("...packages above -- unverified against NuGet..."). Same
+  root cause as before — XML comments can't contain `--` — caught the
+  same way: `dotnet restore` failing inside the Docker build with an exact
+  line/column number, rather than trusting a comment change couldn't
+  possibly break a build.
+- **JWT signing key too short for HS256.** `Rfc2898DeriveBytes`/PBKDF2
+  password hashing doesn't care about key length, but HMAC-SHA256 (the
+  JWT signing algorithm) requires a key of at least 256 bits. An initial
+  `JWT_KEY` value in `.env` was only 208 bits, which surfaced as an
+  `ArgumentOutOfRangeException` the moment `/Auth/Register` tried to sign
+  a token — not at app startup, since the key's length isn't checked until
+  a signature is actually computed. Fixed by generating a longer key
+  (`openssl rand -base64 48`, comfortably over the 32-byte/256-bit
+  minimum).
+- **Watchlist "duplicate rows," which weren't actually duplicates.** After
+  watching two different generators at the same facility, the watchlist
+  page appeared to show repeated rows. This is correct behavior, not a
+  bug: a watchlist entry is keyed on facility only, so watching one
+  generator effectively watches the whole facility, and the watchlist
+  view shows every historical record for that facility (all generators,
+  all ingested dates) — a facility with 2 generators and 3 weeks of daily
+  data legitimately produces ~2 rows per day. Worth calling out here since
+  it's a real design decision (watch a facility, not a specific
+  generator/date snapshot) that's easy to mistake for a bug at a glance.
+- **OpenAI quota error, pivoted to Groq.** The AI summary feature (Step 5)
+  was originally built against OpenAI. The code and the 502 error path
+  worked correctly on the first real test — but the 502's logged detail
+  showed OpenAI returning a 429 with `"You exceeded your current quota,
+  please check your plan and billing details"`: a billing-not-configured
+  problem on the account, not a bug in the integration. Rather than pay
+  for API credits on a portfolio project, switched to Groq, whose API is
+  OpenAI-compatible (same request/response shape, same Bearer auth) and
+  has a genuine no-credit-card free tier. Because the provider-specific
+  pieces (base URL, config keys, model name) were isolated in one service
+  (`OutageSummaryService`), the swap only touched that file, `Program.cs`'s
+  named `HttpClient` registration, and config — not the controller, the
+  DTOs, or the dashboard UI.

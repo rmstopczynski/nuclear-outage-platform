@@ -44,6 +44,25 @@ builder.Services.AddHttpClient("EIA_API", client =>
 builder.Services.AddScoped<EiaIngestionService>();
 builder.Services.AddHostedService<EiaIngestionBackgroundService>();
 
+// --- AI outage summary (Step 5) ------------------------------------------
+// See README's "Why AI stays minimal here" -- one bounded LLM call over
+// data this app already has, not a chat feature. Uses Groq rather than
+// OpenAI: Groq's API is OpenAI-compatible (same request/response shape,
+// same Bearer auth) and has a genuinely free tier with no credit card,
+// consistent with this whole project's "avoid unnecessary paid services"
+// pattern (see README's Postgres/Render/MinIO reasoning in the other
+// projects). No API key required at startup: unlike Eia:ApiKey/Jwt:Key
+// (hard dependencies the app can't run without), this is checked lazily
+// inside OutageSummaryService itself, so the rest of the app works fine
+// with Groq:ApiKey left blank -- hitting the summary endpoint just returns
+// a 503 explaining it's not configured.
+builder.Services.AddHttpClient("Groq_API", client =>
+{
+    client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<OutageSummaryService>();
+
 // --- Auth (Step 3) -------------------------------------------------------
 // AuthService and WatchlistService both depend on ApplicationDbContext, so
 // both are Scoped -- same reasoning as OutageService above.

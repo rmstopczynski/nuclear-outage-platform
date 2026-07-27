@@ -19,7 +19,7 @@
          this exact same line listed twice. -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <!-- Step 3: JWT auth. Version pinned to 8.0.4 to match the other
-         Microsoft.* packages above -- unverified against NuGet (no network
+         Microsoft.* packages above; unverified against NuGet (no network
          access from this sandbox to nuget.org). Flagged in the README as
          the highest-risk unverified piece of this step, same category as
          the Spark image tag that turned out wrong in the healthcare

@@ -31,11 +31,16 @@ namespace MVC_EF_Start_8.Controllers.Api
         private const int MaxPageSize = 200;
 
         private readonly OutageService _outageService;
+        private readonly OutageSummaryService _summaryService;
         private readonly ILogger<OutagesApiController> _logger;
 
-        public OutagesApiController(OutageService outageService, ILogger<OutagesApiController> logger)
+        public OutagesApiController(
+            OutageService outageService,
+            OutageSummaryService summaryService,
+            ILogger<OutagesApiController> logger)
         {
             _outageService = outageService;
+            _summaryService = summaryService;
             _logger = logger;
         }
 
@@ -131,6 +136,55 @@ namespace MVC_EF_Start_8.Controllers.Api
             {
                 _logger.LogError(ex, "GET /api/outages/trends failed.");
                 return Problem("An unexpected error occurred while computing trends.", statusCode: StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        /// <summary>
+        /// GET /api/outages/summary?facility=...&amp;from=...&amp;to=...
+        /// The one AI feature in this project -- a bounded Groq API call
+        /// over the same filtered data GET /api/outages/trends uses,
+        /// producing a short plain-English summary. Defaults to the last
+        /// 7 days if from/to aren't given.
+        /// </summary>
+        [HttpGet("summary")]
+        [ProducesResponseType(typeof(OutageSummaryResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
+        public async Task<IActionResult> GetSummary(
+            [FromQuery] string? facility,
+            [FromQuery] DateOnly? from,
+            [FromQuery] DateOnly? to)
+        {
+            if (from.HasValue && to.HasValue && from > to)
+                return BadRequest(new ProblemDetails { Title = "from must not be after to." });
+
+            try
+            {
+                var (summary, recordCount) = await _summaryService.GenerateSummaryAsync(facility, from, to);
+
+                return Ok(new OutageSummaryResponseDto
+                {
+                    Summary = summary,
+                    Facility = facility,
+                    From = from?.ToString("yyyy-MM-dd"),
+                    To = to?.ToString("yyyy-MM-dd"),
+                    RecordCount = recordCount,
+                    GeneratedAt = DateTime.UtcNow.ToString("o"),
+                });
+            }
+            catch (AiSummaryNotConfiguredException ex)
+            {
+                return Problem(ex.Message, statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+            catch (AiProviderUnavailableException ex)
+            {
+                _logger.LogWarning(ex, "AI summary provider unavailable for GET /api/outages/summary.");
+                return Problem(ex.Message, statusCode: StatusCodes.Status502BadGateway);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GET /api/outages/summary failed unexpectedly.");
+                return Problem("An unexpected error occurred while generating the summary.", statusCode: StatusCodes.Status500InternalServerError);
             }
         }
 

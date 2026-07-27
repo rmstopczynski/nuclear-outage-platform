@@ -31,6 +31,7 @@ services:
       Eia__ApiKey: "${EIA_API_KEY}"
       Eia__IngestionIntervalHours: "${EIA_INGESTION_INTERVAL_HOURS:-6}"
       Jwt__Key: "${JWT_KEY}"
+      Groq__ApiKey: "${GROQ_API_KEY}"
       ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
     ports:
       - "8090:8080"

@@ -25,6 +25,16 @@
     </div>
 </div>
 
+<div class="ai-summary-card">
+    <h3>AI Outage Summary <span class="ai-summary-badge">beta</span></h3>
+    <p class="ai-summary-hint">
+        A short, plain-English summary of recent outage activity, generated
+        on demand from the same data shown above (last 7 days by default).
+    </p>
+    <button id="ai-summary-btn" type="button" class="btn btn-primary">Generate Summary</button>
+    <div id="ai-summary-result" class="ai-summary-result" style="display: none;"></div>
+</div>
+
 @section Styles {
     <style>
         .chart-row {
@@ -36,9 +46,73 @@
             flex: 1;
             min-width: 300px;
         }
+        .ai-summary-card {
+            margin-top: 20px;
+            padding: 16px 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: #fafafa;
+            max-width: 700px;
+        }
+        .ai-summary-badge {
+            font-size: 0.7em;
+            font-weight: normal;
+            color: #666;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 1px 6px;
+            vertical-align: middle;
+        }
+        .ai-summary-hint {
+            color: #555;
+            font-size: 0.9em;
+        }
+        .ai-summary-result {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: #fff;
+            border-left: 4px solid #00543C;
+        }
+        .ai-summary-result.error {
+            border-left-color: #b00020;
+            color: #b00020;
+        }
     </style>
 }
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.getElementById('ai-summary-btn').addEventListener('click', function () {
+            const btn = this;
+            const resultBox = document.getElementById('ai-summary-result');
+
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            resultBox.style.display = 'block';
+            resultBox.classList.remove('error');
+            resultBox.textContent = 'Asking the AI summary endpoint for recent outage activity...';
+
+            fetch('/api/outages/summary')
+                .then(async (response) => {
+                    if (!response.ok) {
+                        const problem = await response.json().catch(() => null);
+                        const message = problem?.detail || problem?.title || `Request failed (${response.status}).`;
+                        throw new Error(message);
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    resultBox.textContent = data.summary;
+                })
+                .catch((error) => {
+                    resultBox.classList.add('error');
+                    resultBox.textContent = `Couldn't generate a summary: ${error.message}`;
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Generate Summary';
+                });
+        });
+    </script>
 }
