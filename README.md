@@ -177,6 +177,11 @@ host-side port numbers differ.
         │   └── OutageSummaryService.cs, AiSummaryExceptions.cs
         ├── Views/
         └── wwwroot/
+    └── NuclearOutagePlatform.McpServer/    # MCP server (Step 6)
+        ├── NuclearOutagePlatform.McpServer.csproj
+        ├── Program.cs                      # stdio transport, tool registration
+        └── Tools/
+            └── OutageTools.cs               # get_recent_outages, get_generation_trend
 ```
 
 ## Roadmap
@@ -200,8 +205,8 @@ new plan but isn't in conflict with it either.
    aggregation, proper DTOs and pagination
 5. ✅ **Small AI-assisted outage summary** — bounded LLM API call (Groq,
    OpenAI-compatible) over structured data, not a chat feature (this step)
-6. (Optional) MCP server exposing outage data as a couple of tools, only
-   if it's a genuine, demoable integration
+6. ✅ **MCP server** — exposes outage data as two tools over stdio (this
+   step)
 7. Polish + documentation — fresh README pass, screenshots, defense notes
 
 Dropped from the original plan (not being built): search/filter as a
@@ -353,6 +358,78 @@ interface — none of them solve a problem this app actually has.
   502 path logged the exact upstream error body (a 429 quota error), which
   is what prompted the switch to Groq rather than leaving the feature
   broken.
+
+## Step 6: MCP server
+
+Added a minimal Model Context Protocol (MCP) server
+(`src/NuclearOutagePlatform.McpServer/`) exposing two tools over stdio:
+
+- `get_recent_outages(facility?, days=7)` — recent outage records,
+  optionally filtered to one facility
+- `get_generation_trend(facility?, days=30)` — daily total outage MW
+  trend over a date range, optionally scoped to one facility
+
+**What MCP actually is, if asked:** a standardized way for an AI client
+(Claude Desktop, an IDE's AI agent, any MCP-aware host) to *discover*
+what tools a server offers — names, descriptions, and typed parameter
+schemas — and call them, without the client needing hand-written,
+model-specific instructions describing your API. Compare that to handing
+an LLM your REST API's Swagger docs and hoping it infers the right
+call shape: MCP tools are self-describing over a structured protocol the
+client already knows how to parse, so a properly-behaved MCP client can
+use `get_recent_outages` correctly without ever having seen this project's
+code.
+
+**Why this is a thin wrapper, not a second data layer:** the MCP server
+does no database access and doesn't reference `OutageService` or
+`ApplicationDbContext` at all. Each tool calls the existing
+`GET /api/outages` / `GET /api/outages/trends` endpoints from Step 4 over
+plain HTTP and returns the response. This was a deliberate choice: it
+means there's exactly one place that knows how to query outage data (the
+REST API), and MCP is purely an additional, structured way to reach it —
+not a parallel implementation that could drift out of sync with the API's
+behavior.
+
+**Why stdio, not HTTP transport:** stdio is the standard way a *local*
+MCP server gets used — the host application (Claude Desktop, an IDE)
+launches it as a child process and talks to it over stdin/stdout, no port
+or network configuration needed. The official SDK also supports an HTTP
+transport for remote servers, which would matter if this were meant to be
+called by a client that isn't running on the same machine — out of scope
+here.
+
+**How to test it (matters for defending this — this was actually run, not
+just written):**
+
+1. Make sure the main app is running: `docker compose up -d` (the tools
+   call its REST API at `http://localhost:8090`).
+2. Point an MCP client at this project. For Claude Desktop, add to its
+   config file (`%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+   ```json
+   {
+     "mcpServers": {
+       "nuclear-outage-platform": {
+         "command": "dotnet",
+         "args": [
+           "run",
+           "--project",
+           "C:\\path\\to\\nuclear-outage-platform\\src\\NuclearOutagePlatform.McpServer\\NuclearOutagePlatform.McpServer.csproj"
+         ]
+       }
+     }
+   }
+   ```
+   Restart Claude Desktop, and both tools should appear as available. Ask
+   it something like *"what nuclear facilities have had outages in the
+   last week?"* and it should call `get_recent_outages` and answer from
+   the real result.
+3. Alternatively, the official test harness works without any AI client
+   at all: `npx @modelcontextprotocol/inspector dotnet run --project
+   src/NuclearOutagePlatform.McpServer/NuclearOutagePlatform.McpServer.csproj`
+   opens a local web UI that lists both tools and lets you call them
+   directly with arbitrary arguments — useful for confirming the server
+   works end to end without depending on any particular LLM's tool-calling
+   behavior.
 
 ## Challenges encountered (and how they were resolved)
 

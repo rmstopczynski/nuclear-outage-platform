@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>NuclearOutagePlatform.McpServer</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Official C# MCP SDK (Microsoft + Anthropic co-maintained), stable
+         as of mid-2026. Package version pinned but not verified against
+         NuGet from this sandbox (no network access to nuget.org here);
+         same category of unverified-version risk as the JWT Bearer
+         package in Step 3. If `dotnet restore` fails on this line, drop
+         the explicit Version and let restore pick a compatible one. -->
+    <PackageReference Include="ModelContextProtocol" Version="1.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>
