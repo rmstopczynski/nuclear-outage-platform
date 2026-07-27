@@ -17,6 +17,10 @@
          the explicit Version and let restore pick a compatible one. -->
     <PackageReference Include="ModelContextProtocol" Version="1.4.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <!-- Needed explicitly here: this console app doesn't get ASP.NET
+         Core's shared framework (which is where the main web app gets
+         AddHttpClient/IHttpClientFactory for free), so it needs its own
+         reference to the package that actually defines them. -->
     <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
   </ItemGroup>
 

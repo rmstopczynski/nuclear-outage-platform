@@ -112,7 +112,11 @@ user accounts, watchlists, scheduled background ingestion (data still
 refreshes on page load if the table is empty, same trigger as before —
 just persisted now), search/filter UI improvements, CI/CD, React
 frontend, live deployment. Keeping each step's diff reviewable on its
-own, same discipline as the other project.
+own, same discipline as the other project. (For what it's worth: most of
+this list *did* get built in later steps — auth/watchlists in Step 3,
+background ingestion in Step 2, search/filter folded into Step 4's API
+query params. CI, React, and live deployment did not, per the roadmap
+pivot described below.)
 
 ## Quickstart
 
@@ -204,10 +208,10 @@ new plan but isn't in conflict with it either.
 4. ✅ **REST API layer** — CRUD, facility/date-range filters, trend
    aggregation, proper DTOs and pagination
 5. ✅ **Small AI-assisted outage summary** — bounded LLM API call (Groq,
-   OpenAI-compatible) over structured data, not a chat feature (this step)
-6. ✅ **MCP server** — exposes outage data as two tools over stdio (this
-   step)
-7. Polish + documentation — fresh README pass, screenshots, defense notes
+   OpenAI-compatible) over structured data, not a chat feature
+6. ✅ **MCP server** — exposes outage data as two tools over stdio
+7. ✅ **Polish + documentation** — README pass and defense notes done (this
+   step); fresh screenshots/demo GIF still pending
 
 Dropped from the original plan (not being built): search/filter as a
 separate step (folded into Step 4's API filters instead), GitHub Actions
@@ -487,3 +491,74 @@ just written):**
   (`OutageSummaryService`), the swap only touched that file, `Program.cs`'s
   named `HttpClient` registration, and config — not the controller, the
   DTOs, or the dashboard UI.
+- **MCP server: missing assembly reference, not just a missing `using`.**
+  `IHttpClientFactory` failed to resolve in the new MCP server console
+  project with `CS0246`. The web app never needs an explicit package
+  reference for it because ASP.NET Core's shared framework bundles
+  `Microsoft.Extensions.Http` for free; a plain console app
+  (`Microsoft.NET.Sdk`, no shared framework) doesn't get that for free and
+  needs its own `PackageReference`. Diagnosed by first assuming it was
+  just a missing `using` directive (an easy, wrong guess), adding one, and
+  getting a more specific `CS0234` ("the namespace doesn't exist in any
+  referenced assembly") on the *next* build — which is what actually
+  pointed at the real fix (add the package, not just the `using`).
+- **MCP Inspector's first connection attempt timed out**, not because
+  anything was broken, but because `dotnet run` on a brand-new project has
+  to restore NuGet packages and build from scratch before the process can
+  even respond to MCP's `initialize` handshake — slower than Inspector's
+  connection timeout. The ~30 `notifications/message` log entries visible
+  in Inspector's UI during the failed attempt were actually a good sign:
+  the server process *had* started and *was* emitting real log output, just
+  too slowly for that first handshake. Fixed by running `dotnet build`
+  once up front so the subsequent `dotnet run` (which Inspector launches)
+  only has to verify an already-current build rather than compile from
+  scratch.
+
+## Defense sheet — questions to be ready for
+
+- **Why did you rebuild instead of continuing the group project's repo?**
+  See "Origin and rebuild scope" above — new ownership, dead Azure
+  credits, and a rebuild was the more honest way to demonstrate solo work.
+- **Walk me through what you found wrong with the original code.** Same
+  section — no real database, hardcoded credentials, the Update/Delete
+  bug, the Singleton/Scoped mismatch, the direct `HttpClient` instantiation.
+- **Why Postgres/Render instead of what the original used?** See "Why
+  Postgres instead of Azure SQL" and "Why Render instead of Azure App
+  Service" — cost and hosting-tier constraints, not a technology
+  preference.
+- **Why is the AI feature so limited in scope?** See Step 5's "Why this
+  stays this narrow" — the app's core value is reliable data
+  ingestion/storage/visualization; an LLM doesn't fix a problem that
+  layer doesn't have. The one legitimate use is turning tabular data into
+  a sentence a non-technical reader can skim.
+- **Walk me through what the outage summary endpoint actually does, step
+  by step.** Query filtered outage rows → aggregate per facility in
+  C# → build a compact prompt (not raw rows) → one bounded Groq API call
+  with an explicit "don't invent facts" system prompt → return the text.
+  See Step 5.
+- **Why Groq instead of OpenAI?** See the "OpenAI quota error, pivoted to
+  Groq" entry in Challenges — hit a real billing wall, and the fix
+  doubles as a decent story about provider-specific code being isolated
+  in one service.
+- **What does MCP actually solve that a REST API doesn't?** See Step 6's
+  "What MCP actually is" — structured, self-describing tool discovery for
+  AI clients, not a replacement for the REST API underneath it (the MCP
+  server calls the REST API, it doesn't reimplement data access).
+- **What would you need to add if this had to run in production at real
+  utility scale?** Rate limiting/auth on the write endpoints (currently
+  anonymous, same as the original MVC actions — noted as a known gap in
+  Step 4), a queue or retry policy in front of the EIA ingestion job
+  instead of an in-process `BackgroundService`, structured logging
+  shipped somewhere durable instead of container stdout, and likely
+  splitting the MCP server and API into separately deployable/scalable
+  processes rather than the API being a single container.
+- **How do you handle EIA API downtime or rate limits?** `EiaIngestionService`
+  catches request exceptions and non-success responses, logs a warning,
+  and returns `0` inserted rather than crashing the app or the background
+  service loop — see Step 2 and the ingestion-service code itself.
+- **What was the biggest change between your original version and this
+  one, and why?** Arguably the roadmap pivot itself, documented at the top
+  of the Roadmap section — this project changed identity partway through,
+  from "keep adding generic full-stack features" to "REST API + one
+  justified AI feature + MCP," to match the specific engineering roles
+  this portfolio targets rather than breadth for its own sake.
